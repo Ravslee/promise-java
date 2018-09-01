@@ -118,6 +118,7 @@ Other Static API of promise :
 1. `Promise.all(Promise...).then();`
 1. `Promise.parallel(Object..., <HandlerFunction>).then();`
 1. `Promise.series(Object..., <HandlerFunction>).then();`
+1. `Promise.parallelWithLimit(Object..., limit, <HandlerFunction>).then();`
 
 
 ### How to use in android?
