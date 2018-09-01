@@ -27,6 +27,7 @@ import android.util.Log;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * The Promise object represents the eventual completion (or failure)
@@ -242,6 +243,73 @@ public class Promise {
     }
 
     /**
+     * When you want to execute some operations parallelly with some parallel excution limit,
+     * then you can use this function.
+     *
+     * @param list List over which you want to execute operation.
+     * @param limit this is limit to your parallel execution.
+     * @param listener
+     * @return This will return the result after completion of entire execution.
+     */
+    public static Promise parallelWithLimit(List<?> list, int limit, OnSuccessListener listener) {
+
+        Promise p = new Promise();
+        if (list == null || listener == null || list.size() <= 0) {
+            Log.e(TAG, "Arguments should not be NULL!");
+            return null;
+        }
+
+        if (limit <= 0) {
+            Log.e(TAG, "Limit argument should not be <= ZERO!");
+            return null;
+        }
+
+        int[] count = new int[1];
+        int[] iteration = new int[1];
+        ArrayList childList = new ArrayList<>();
+
+        Promise
+                .series(list, object -> {
+                    Promise pro = new Promise();
+                    count[0]++;
+                    iteration[0]++;
+                    if (count[0] < limit ) {
+                        childList.add(object);
+                        if(iteration[0]==list.size()){
+                            parallel(childList, listener)
+                                    .then(res -> {
+                                        pro.resolve(res);
+                                        count[0] = 0;
+                                        childList.clear();
+                                        return res;
+                                    });
+                        }else{
+                            pro.resolve(true);
+                        }
+
+                    } else if (count[0] == limit) {
+                        childList.add(object);
+                        parallel(childList, listener)
+                                .then(res -> {
+                                    pro.resolve(res);
+                                    count[0] = 0;
+                                    childList.clear();
+                                    return res;
+                                });
+                    }
+
+                    return pro;
+
+                })
+                .then(res -> {
+                    p.resolve(res);
+                    return res;
+                });
+
+        return p;
+    }
+
+    /**
      * Call this function with your resultant value, it will be available
      * in following `then()` function call.
      *
@@ -384,6 +452,8 @@ public class Promise {
     public interface OnErrorListener {
         void onError(Object object);
     }
+
+
 
 }
 
